@@ -45,8 +45,12 @@ def shorten_url(request: URLRequest):
 
 
 # Redirect API
+from fastapi.responses import RedirectResponse
+
 @app.get("/{short_code}")
 def redirect_url(short_code: str):
     if short_code in url_db:
-        return {"original_url": url_db[short_code]}
+        original_url = url_db[short_code]
+        return RedirectResponse(url=original_url)
+    
     return {"error": "URL not found"}

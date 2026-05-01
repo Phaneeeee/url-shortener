@@ -10,3 +10,5 @@ dist/
 
 # Env
 .env
+
+.vscode/

@@ -7,3 +7,4 @@ class URL(Base):
     id = Column(Integer, primary_key=True, index=True)
     original_url = Column(String, nullable=False)
     short_code = Column(String, unique=True, index=True, nullable=True)
+    click_count = Column(Integer, default=0)

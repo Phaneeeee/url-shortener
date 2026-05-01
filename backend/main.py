@@ -65,6 +65,21 @@ def redirect_url(short_code: str, db: Session = Depends(get_db)):
     url = db.query(URL).filter(URL.short_code == short_code).first()
 
     if url:
+        url.click_count += 1
+        db.commit()
         return RedirectResponse(url=url.original_url)
 
     raise HTTPException(status_code=404, detail="URL not found")
+
+@app.get("/stats/{short_code}")
+def get_stats(short_code: str, db: Session = Depends(get_db)):
+    url = db.query(URL).filter(URL.short_code == short_code).first()
+
+    if not url:
+        raise HTTPException(status_code=404, detail="URL not found")
+
+    return {
+        "original_url": url.original_url,
+        "short_code": url.short_code,
+        "clicks": url.click_count
+    }

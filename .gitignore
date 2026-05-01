@@ -1,5 +1,6 @@
 # Python
 venv/
+backend/venv/
 __pycache__/
 *.pyc
 
@@ -7,8 +8,5 @@ __pycache__/
 node_modules/
 dist/
 
-# Environment
+# Env
 .env
-
-# OS
-.DS_Store

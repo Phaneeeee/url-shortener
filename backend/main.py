@@ -3,18 +3,22 @@ from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from typing import Optional
+import os
 import string
 from database import engine, SessionLocal, Base
 from models import URL
 from fastapi.middleware.cors import CORSMiddleware
 
 
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+CORS_ORIGIN = os.getenv("CORS_ORIGIN", "http://localhost:3000")
+CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGIN.split(",") if origin.strip()]
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,6 +50,10 @@ def encode_base62(num):
     return ''.join(reversed(encoded)) or "0"
 
 
+def build_short_url(short_code: str) -> str:
+    return f"{BASE_URL}/{short_code}"
+
+
 @app.post("/shorten")
 def shorten_url(request: URLRequest, db: Session = Depends(get_db)):
 
@@ -66,7 +74,7 @@ def shorten_url(request: URLRequest, db: Session = Depends(get_db)):
         db.commit()
 
         return {
-            "short_url": f"http://127.0.0.1:8000/{short_code}"
+            "short_url": build_short_url(short_code)
         }
 
     new_url = URL(original_url=request.url)
@@ -81,7 +89,7 @@ def shorten_url(request: URLRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return {
-        "short_url": f"http://127.0.0.1:8000/{short_code}"
+        "short_url": build_short_url(short_code)
     }
 
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const DISPLAY_API_URL = API_URL.replace(/^https?:\/\//, "");
 
 function App() {
   const [url, setUrl] = useState("");
@@ -64,7 +65,7 @@ function App() {
         setError(data.detail || "Could not create that short link.");
       }
     } catch {
-      setError("Could not connect to the backend at 127.0.0.1:8000.");
+      setError(`Could not connect to the backend at ${DISPLAY_API_URL}.`);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +135,7 @@ function App() {
           <label className="field-group">
             <span>Custom code</span>
             <div className="code-input">
-              <span>{API_URL.replace("http://", "")}/</span>
+              <span>{DISPLAY_API_URL}/</span>
               <input
                 placeholder="launch"
                 value={customCode}
@@ -152,7 +153,7 @@ function App() {
 
         <div className="link-preview" aria-label="Short link preview">
           <span>Preview</span>
-          <strong>{API_URL.replace("http://", "")}/{previewCode}</strong>
+          <strong>{DISPLAY_API_URL}/{previewCode}</strong>
         </div>
 
         {shortUrl && (

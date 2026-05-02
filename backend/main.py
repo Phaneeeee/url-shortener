@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
+from mangum import Mangum
 from sqlalchemy.orm import Session
 from typing import Optional
 import os
@@ -116,3 +117,6 @@ def get_stats(short_code: str, db: Session = Depends(get_db)):
         "short_code": url.short_code,
         "clicks": url.click_count
     }
+
+
+handler = Mangum(app)

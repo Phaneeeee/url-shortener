@@ -1,21 +1,58 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+const API_URL = "http://127.0.0.1:8000";
 
 function App() {
   const [url, setUrl] = useState("");
   const [customCode, setCustomCode] = useState("");
   const [shortUrl, setShortUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || "light";
+  });
 
-  const handleSubmit = async () => {
+  const previewCode = useMemo(() => customCode.trim() || "auto", [customCode]);
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((currentTheme) => (currentTheme === "light" ? "dark" : "light"));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setCopied(false);
+
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl) {
+      setError("Enter a destination URL to shorten.");
+      return;
+    }
+
     try {
-      const res = await fetch("http://127.0.0.1:8000/shorten", {
+      new URL(trimmedUrl);
+    } catch {
+      setError("Use a complete URL, including https:// or http://.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/shorten`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          url: url,
-          custom_code: customCode || null,
+          url: trimmedUrl,
+          custom_code: customCode.trim() || null,
         }),
       });
 
@@ -24,99 +61,117 @@ function App() {
       if (res.ok) {
         setShortUrl(data.short_url);
       } else {
-        alert(data.detail);
+        setError(data.detail || "Could not create that short link.");
       }
-    } catch (error) {
-      alert("Error connecting to backend");
+    } catch {
+      setError("Could not connect to the backend at 127.0.0.1:8000.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shortUrl);
+  const handleCopy = async () => {
+    if (!shortUrl) return;
+
+    await navigator.clipboard.writeText(shortUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2>URL Shortener</h2>
+    <main className="app-shell" data-theme={theme}>
+      <section className="shortener-panel" aria-labelledby="page-title">
+        <div className="brand-row">
+          <div className="brand-lockup">
+            <div className="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 48 48" role="img" focusable="false">
+                <path
+                  d="M18.5 30.5 15 34a6.4 6.4 0 0 1-9-9l6.5-6.5a6.4 6.4 0 0 1 9 0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="4"
+                />
+                <path
+                  d="M29.5 17.5 33 14a6.4 6.4 0 0 1 9 9l-6.5 6.5a6.4 6.4 0 0 1-9 0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="4"
+                />
+                <path
+                  d="M19 29 29 19"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="4"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1 id="page-title">URL Shortener</h1>
+            </div>
+          </div>
 
-        <input
-          style={styles.input}
-          placeholder="Enter URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
+          <button className="theme-toggle" onClick={toggleTheme} type="button">
+            {theme === "light" ? "Dark" : "Light"}
+          </button>
+        </div>
 
-        <input
-          style={styles.input}
-          placeholder="Custom code (optional)"
-          value={customCode}
-          onChange={(e) => setCustomCode(e.target.value)}
-        />
+        <form className="shortener-form" onSubmit={handleSubmit}>
+          <label className="field-group">
+            <span>Destination URL</span>
+            <input
+              type="url"
+              placeholder="https://example.com/very/long/link"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+            />
+          </label>
 
-        <button style={styles.button} onClick={handleSubmit}>
-          Shorten
-        </button>
+          <label className="field-group">
+            <span>Custom code</span>
+            <div className="code-input">
+              <span>{API_URL.replace("http://", "")}/</span>
+              <input
+                placeholder="launch"
+                value={customCode}
+                onChange={(event) => setCustomCode(event.target.value)}
+              />
+            </div>
+          </label>
+
+          {error && <p className="status-message error">{error}</p>}
+
+          <button className="primary-button" disabled={isLoading} type="submit">
+            {isLoading ? "Shortening..." : "Shorten URL"}
+          </button>
+        </form>
+
+        <div className="link-preview" aria-label="Short link preview">
+          <span>Preview</span>
+          <strong>{API_URL.replace("http://", "")}/{previewCode}</strong>
+        </div>
 
         {shortUrl && (
-          <div style={{ marginTop: "15px" }}>
-            <p>
-              Short URL:{" "}
+          <section className="result-panel" aria-live="polite">
+            <div>
+              <span>Your short link</span>
               <a href={shortUrl} target="_blank" rel="noreferrer">
                 {shortUrl}
               </a>
-            </p>
-
-            <button style={styles.copyButton} onClick={handleCopy}>
-              Copy
+            </div>
+            <button className="secondary-button" onClick={handleCopy} type="button">
+              {copied ? "Copied" : "Copy"}
             </button>
-
-            {copied && <p style={{ color: "green" }}>Copied!</p>}
-          </div>
+          </section>
         )}
-      </div>
-    </div>
+      </section>
+      <p className="credits">Made by Phaneendra Peravarapu</p>
+    </main>
   );
 }
-
-const styles = {
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    backgroundColor: "#f5f5f5",
-  },
-  card: {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "8px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-    width: "300px",
-  },
-  input: {
-    width: "100%",
-    padding: "8px",
-    marginBottom: "10px",
-  },
-  button: {
-    width: "100%",
-    padding: "10px",
-    backgroundColor: "#007bff",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-  },
-  copyButton: {
-    marginTop: "10px",
-    padding: "5px 10px",
-    backgroundColor: "green",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-  },
-};
 
 export default App;

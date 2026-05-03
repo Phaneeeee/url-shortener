@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const API_URL = process.env.REACT_APP_API_URL || "https://urlspace.online";
 const DISPLAY_API_URL = API_URL.replace(/^https?:\/\//, "");
 
 function App() {
